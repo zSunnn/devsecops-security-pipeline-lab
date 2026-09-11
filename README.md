@@ -27,5 +27,3 @@ before adding the next component.
 
 Security testing is limited to this lab and explicitly authorised targets.
 Use synthetic data and dummy credentials only.
-
-My goal is to understand how security checks fit into software delivery.
