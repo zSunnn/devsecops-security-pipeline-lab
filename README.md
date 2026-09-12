@@ -28,3 +28,4 @@ before adding the next component.
 Security testing is limited to this lab and explicitly authorised targets.
 Use synthetic data and dummy credentials only.
 Day la learning GOAL!!! Git staging?
+My goal is to understand how security checks integrate into CI/CD.
