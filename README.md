@@ -5,7 +5,8 @@ SAST, DAST and GitHub Actions.
 
 ## Current progress
 
-- Lesson 1: Local environment and Git fundamentals (in progress).
+- Lesson 1: Local environment and Git fundamentals (completed).
+- Lesson 2: GitHub branches and pull requests (in progress).
 - No security scanners or CI/CD workflows have been implemented yet.
 
 ## Learning approach
