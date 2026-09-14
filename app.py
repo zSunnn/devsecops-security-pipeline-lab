@@ -2,9 +2,6 @@ from flask import Flask
 
 app = Flask(__name__)
 
-# Deliberate dummy value for testing the CI security gate.
-value = "lab-demo-not-a-real-password"
-
 @app.route("/")
 def home():
     print("Server received a request")
