@@ -3,7 +3,7 @@ from flask import Flask
 app = Flask(__name__)
 
 # Deliberate dummy value for testing the CI security gate.
-password = "lab-demo-not-a-real-password"
+value = "lab-demo-not-a-real-password"
 
 @app.route("/")
 def home():
