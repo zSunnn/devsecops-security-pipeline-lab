@@ -30,3 +30,6 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+      
+      - name: Run Bandit SAST
+        run: python -m bandit app.py
