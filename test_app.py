@@ -10,3 +10,9 @@ def test_old_hello_route_not_found():
     client = app.test_client()
     response = client.get("/hello")
     assert response.status_code == 404
+
+def test_welcome_has_nosniff_header():
+    client = app.test_client()
+    response = client.get("/welcome")
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    
