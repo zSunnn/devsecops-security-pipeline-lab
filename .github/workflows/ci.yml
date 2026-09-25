@@ -79,5 +79,5 @@ jobs:
           path: |
             reports/raw/zap-ci.html
             reports/raw/zap-ci.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
