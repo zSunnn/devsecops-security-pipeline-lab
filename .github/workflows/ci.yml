@@ -33,3 +33,7 @@ jobs:
       
       - name: Run Bandit SAST
         run: python -m bandit app.py
+
+      - name: Build Docker image
+        run: docker build -t devsecops-lab:ci .
+        
