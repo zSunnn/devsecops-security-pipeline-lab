@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -52,4 +52,32 @@ jobs:
           done
           docker logs devsecops-web
           exit 1
-
+        
+      - name: Prepare ZAP files
+        run: |
+          mkdir -p reports/raw
+          cp .zap/baseline.conf reports/raw/baseline.conf
+          chmod a+w reports/raw
+        
+      - name: Run ZAP Baseline
+        run: |
+          docker run --rm \
+            --network devsecops-net \
+            --mount "type=bind,source=$PWD/reports/raw,target=/zap/wrk" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://devsecops-web:5000/welcome \
+            -c baseline.conf \
+            -I \
+            -r zap-ci.html \
+            -J zap-ci.json
+      - name: Upload ZAP reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-reports
+          path: |
+            reports/raw/zap-ci.html
+            reports/raw/zap-ci.json
+          if-no-files-found: warn
+          retention-days: 7
