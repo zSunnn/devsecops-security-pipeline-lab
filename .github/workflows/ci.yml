@@ -36,4 +36,9 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t devsecops-lab:ci .
-        
+
+      - name: Start Flask container
+        run: |
+          docker network create devsecops-net
+          docker run -d --name devsecops-web --network devsecops-net -p 127.0.0.1:5000:5000 devsecops-lab:ci
+
