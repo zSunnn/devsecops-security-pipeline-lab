@@ -41,4 +41,15 @@ jobs:
         run: |
           docker network create devsecops-net
           docker run -d --name devsecops-web --network devsecops-net -p 127.0.0.1:5000:5000 devsecops-lab:ci
+      
+      - name: Wait for Flask
+        run: |
+          for attempt in {1..15}; do
+            if curl --fail --silent --show-error --connect-timeout 2 --max-time 3 http://127.0.0.1:5000/welcome; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs devsecops-web
+          exit 1
 
