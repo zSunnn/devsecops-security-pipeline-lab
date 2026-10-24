@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevSecOps Pipeline Lab</title>
+<meta name="description" content="Interactive walkthrough of a DevSecOps lab: Flask app, GitHub Actions, Bandit SAST, OWASP ZAP DAST and a merge gate.">
+<style>
+:root{
+  --bg:#f5f7f6; --surface:#ffffff; --surface-2:#edf1ef; --ink:#142022; --muted:#576567; --line:#d9e1de;
+  --accent:#0f766e; --accent-soft:#d9f2ee; --blue:#2358c4; --blue-soft:#e2ebff;
+  --amber:#a15c00; --amber-soft:#fff0d4; --red:#b3261e; --red-soft:#fde8e6; --green:#1a7f43; --green-soft:#e0f4e8;
+  --code:#0b1517; --code-ink:#d3ece6;
+  --shadow:0 1px 2px rgba(20,32,34,.06),0 6px 20px rgba(20,32,34,.06);
+  --radius:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#0c1214; --surface:#141c1f; --surface-2:#1b2529; --ink:#e6edeb; --muted:#97a6a8; --line:#273337;
+  --accent:#4fd1bd; --accent-soft:#0f2e2a; --blue:#7aa6ff; --blue-soft:#172746;
+  --amber:#f0b04a; --amber-soft:#3a2a0c; --red:#ff8a80; --red-soft:#3b1714; --green:#59d08b; --green-soft:#0f2e1c;
+  --code:#060b0c; --code-ink:#cfe9e3;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1214; --surface:#141c1f; --surface-2:#1b2529; --ink:#e6edeb; --muted:#97a6a8; --line:#273337;
+    --accent:#4fd1bd; --accent-soft:#0f2e2a; --blue:#7aa6ff; --blue-soft:#172746;
+    --amber:#f0b04a; --amber-soft:#3a2a0c; --red:#ff8a80; --red-soft:#3b1714; --green:#59d08b; --green-soft:#0f2e1c;
+    --code:#060b0c; --code-ink:#cfe9e3;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.88em}
+code{background:var(--surface-2);padding:.1em .38em;border-radius:6px}
+h1,h2,h3,h4{line-height:1.2;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:6px;height:56px;overflow-x:auto;scrollbar-width:none}
+.nav .wrap::-webkit-scrollbar{display:none}
+.nav .brand{font-weight:700;margin-right:10px;white-space:nowrap}
+.nav a.link{color:var(--muted);text-decoration:none;padding:7px 11px;border-radius:999px;font-size:14px;white-space:nowrap}
+.nav a.link:hover{color:var(--ink);background:var(--surface-2)}
+.nav a.link.on{color:var(--accent);background:var(--accent-soft);font-weight:600}
+.nav .sp{flex:1}
+.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.hero{padding:56px 0 30px}
+.eyebrow{display:inline-block;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:999px}
+.hero h1{font-size:clamp(30px,5vw,48px);margin:16px 0 14px;letter-spacing:-.02em}
+.hero p.sub{font-size:18px;color:var(--muted);max-width:760px;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:30px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:30px;line-height:1.1;letter-spacing:-.02em}
+.stat span{color:var(--muted);font-size:14px}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.links a{display:inline-block;padding:9px 16px;border:1px solid var(--line);border-radius:999px;text-decoration:none;background:var(--surface);color:var(--ink);font-size:14px}
+.links a:hover{border-color:var(--accent);color:var(--accent)}
+
+section.s{padding:44px 0}
+section.alt{background:var(--surface-2)}
+.s-head{margin-bottom:22px}
+.s-head .k{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.s-head h2{font-size:clamp(24px,3.4vw,32px);margin:6px 0 8px;letter-spacing:-.015em}
+.s-head p{margin:0;color:var(--muted);max-width:760px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:22px}
+
+/* pipeline stepper */
+.pipe{display:grid;grid-template-columns:minmax(260px,1fr) 1.3fr;gap:18px;align-items:start}
+@media(max-width:860px){.pipe{grid-template-columns:1fr}}
+.pipe>*{min-width:0}
+.stages{display:flex;flex-direction:column;gap:8px}
+.stage{display:flex;gap:12px;align-items:center;text-align:left;font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:11px 13px;cursor:pointer}
+.stage:hover{border-color:var(--accent)}
+.stage .n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:13px;font-weight:700}
+.stage .t{font-size:15px;font-weight:600;line-height:1.25}
+.stage .t small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.stage.sec .n{background:var(--accent-soft);color:var(--accent)}
+.stage.on{border:2px solid var(--accent);padding:10px 12px;background:var(--accent-soft)}
+.stage.on .n{background:var(--accent);color:#fff}
+.detail h3{font-size:20px;margin-bottom:4px}
+.detail .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;margin-bottom:10px}
+.tag.test{background:var(--blue-soft);color:var(--blue)}
+.tag.sec{background:var(--accent-soft);color:var(--accent)}
+.tag.gate{background:var(--red-soft);color:var(--red)}
+.tag.build{background:var(--surface-2);color:var(--muted)}
+.detail dl{margin:12px 0 0}
+.detail dt{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:14px}
+.detail dd{margin:4px 0 0}
+.detail pre{margin:6px 0 0}
+pre{background:var(--code);color:var(--code-ink);border-radius:12px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.6}
+pre code{background:transparent;color:inherit;padding:0;font-size:inherit}
+.outcome{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+@media(max-width:560px){.outcome{grid-template-columns:1fr}}
+.box{border-radius:12px;padding:12px 14px;font-size:14px}
+.box b{display:block;margin-bottom:2px}
+.box.ok{background:var(--green-soft);color:var(--green)}
+.box.no{background:var(--red-soft);color:var(--red)}
+
+/* diagram */
+svg.diagram{width:100%;height:auto;display:block}
+.d-run{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+.d-net{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;stroke-dasharray:6 4;opacity:.9}
+.d-lbl{fill:var(--muted);font-size:12px}
+.d-net-t{fill:var(--accent);font-size:13px;font-weight:700}
+.d-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.d-t{fill:var(--ink);font-size:14px;font-weight:700}
+.d-s{fill:var(--muted);font-size:12px}
+.d-chip{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.d-chip-t{fill:var(--accent);font-size:11px;font-weight:600}
+.d-warn{fill:var(--red-soft);stroke:var(--red);stroke-width:1}
+.d-warn-t{fill:var(--red);font-size:11px;font-weight:600}
+.d-arrow{stroke:var(--accent);stroke-width:2;fill:none}
+.d-flow{fill:var(--surface-2);stroke:var(--line)}
+
+/* timeline */
+.tl{position:relative;display:flex;flex-direction:column;gap:14px}
+.tl-item{display:grid;grid-template-columns:104px 1fr;gap:16px}
+@media(max-width:620px){.tl-item{grid-template-columns:1fr;gap:4px}}
+.tl-when{font-weight:700;font-size:14px;color:var(--accent);padding-top:18px}
+.tl-card{padding:16px 18px}
+.tl-card h3{font-size:17px;margin-bottom:4px}
+.tl-card p{margin:0 0 8px;color:var(--muted);font-size:14.5px}
+.prs{display:flex;flex-wrap:wrap;gap:8px}
+.pr{font-size:12.5px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--surface-2);color:var(--ink)}
+.pr:hover{border-color:var(--accent);color:var(--accent)}
+.pr.exp{border-style:dashed}
+
+/* experiments */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tabs button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 16px;cursor:pointer}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.exp-pane{display:none}
+.exp-pane.on{display:block}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0}
+.st{border:1px solid var(--line);border-radius:12px;padding:12px 13px;background:var(--surface);font-size:14px}
+.st h4{font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;color:var(--muted)}
+.st p{margin:0}
+.st .mono{color:var(--ink)}
+.st.bad{border-color:var(--red);background:var(--red-soft)}.st.bad h4{color:var(--red)}
+.st.good{border-color:var(--green);background:var(--green-soft)}.st.good h4{color:var(--green)}
+.st.warn{border-color:var(--amber);background:var(--amber-soft)}.st.warn h4{color:var(--amber)}
+.takeaway{margin-top:14px;padding:12px 14px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;font-size:14.5px}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table.val{width:100%;border-collapse:collapse;font-size:14.5px;min-width:620px}
+table.val th{text-align:left;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+table.val td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+table.val tr:last-child td{border-bottom:0}
+.risk{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.risk.med{background:var(--amber-soft);color:var(--amber)}
+.risk.low{background:var(--blue-soft);color:var(--blue)}
+.risk.info{background:var(--surface-2);color:var(--muted)}
+.gated{font-size:12px;font-weight:700;color:var(--red)}
+.note{font-size:13.5px;color:var(--muted);background:var(--surface-2);border-radius:10px;padding:9px 12px;margin:14px 0 0}
+.note b{color:var(--ink)}
+details.run{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:4px 16px;margin-top:8px}
+details.run summary{cursor:pointer;font-weight:600;padding:10px 0}
+.limits{margin:0;padding-left:20px;color:var(--muted)}
+.limits li{margin:5px 0}
+footer{padding:36px 0 56px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);margin-top:24px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+@page{size:A4;margin:12mm}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .nav,.btn,.tabs,.stages{display:none!important}
+  .exp-pane{display:block!important;margin-bottom:16px}
+  section.s{break-before:page}
+  .card,.st,.box{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap">
+    <span class="brand">DevSecOps Lab</span>
+    <a class="link" href="#overview">Overview</a>
+    <a class="link" href="#pipeline">Pipeline</a>
+    <a class="link" href="#where">Where it runs</a>
+    <a class="link" href="#timeline">Timeline</a>
+    <a class="link" href="#experiments">Experiments</a>
+    <a class="link" href="#findings">Findings</a>
+    <a class="link" href="#run">Run it</a>
+    <span class="sp"></span>
+    <button class="btn" id="theme" type="button" aria-label="Toggle colour theme">Theme</button>
+  </div>
+</nav>
+
+<header class="hero" id="overview">
+  <div class="wrap">
+    <span class="eyebrow">Flask · GitHub Actions · Bandit · OWASP ZAP</span>
+    <h1>From a first commit to a security gate</h1>
+    <p class="sub">A small web app that grew, one verified step at a time, into a CI pipeline with tests, a SAST scan, a DAST scan against a running container, and a required check that blocks unsafe merges. Each experiment changes one thing and records what it did and did not prove.</p>
+    <div class="chips">
+      <span class="chip">Python 3.13 · Flask 3.1</span>
+      <span class="chip">Docker · python:3.13-slim</span>
+      <span class="chip">Bandit 1.9 (SAST)</span>
+      <span class="chip">ZAP Baseline (DAST)</span>
+      <span class="chip">Required status check</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>11</b><span>CI workflow steps</span></div>
+      <div class="stat"><b>2</b><span>security scanners</span></div>
+      <div class="stat"><b>2</b><span>merge-gate experiments</span></div>
+      <div class="stat"><b>1</b><span>real finding fixed</span></div>
+      <div class="stat"><b>7</b><span>merged pull requests</span></div>
+    </div>
+    <div class="links">
+      <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab">GitHub repository</a>
+      <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab/blob/main/README.md">README</a>
+      <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab/blob/main/WALKTHROUGH.md">Markdown walkthrough</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="s" id="pipeline">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">1 · The pipeline</div>
+      <h2>What happens on every pull request</h2>
+      <p>Click a stage to see what it runs, why it is there and what makes it fail. A failure at any stage turns the required check red and GitHub blocks the merge.</p>
+    </div>
+    <div class="pipe">
+      <div class="stages" id="stages" role="list"></div>
+      <div class="card pad detail" id="detail" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt" id="where">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">2 · Where the scan runs</div>
+      <h2>Two containers on one Docker network</h2>
+      <p>The app and ZAP share a network, so ZAP reaches Flask by its container name. Reports are written through a bind mount and uploaded as an artifact.</p>
+    </div>
+    <div class="card pad">
+      <svg class="diagram" viewBox="0 0 760 410" role="img" aria-labelledby="dT dD">
+        <title id="dT">CI scan architecture</title>
+        <desc id="dD">On the GitHub runner, a Flask container and a ZAP container share the devsecops-net Docker network. ZAP scans the app, writes reports through a bind mount, and the reports are uploaded as an artifact.</desc>
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10z" style="fill:var(--accent)"/></marker></defs>
+        <rect class="d-run" x="8" y="8" width="744" height="394" rx="18"/>
+        <text class="d-lbl" x="24" y="28">GitHub-hosted runner · ubuntu-latest</text>
+
+        <rect class="d-net" x="36" y="44" width="688" height="196" rx="16"/>
+        <text class="d-net-t" x="54" y="68">Docker network · devsecops-net</text>
+
+        <rect class="d-box" x="64" y="84" width="270" height="138" rx="14"/>
+        <text class="d-t" x="80" y="110">devsecops-web</text>
+        <text class="d-s" x="80" y="130">Flask · python:3.13-slim · port 5000</text>
+        <rect class="d-chip" x="80" y="146" width="92" height="24" rx="12"/><text class="d-chip-t" x="126" y="162" text-anchor="middle">GET /welcome</text>
+        <rect class="d-chip" x="180" y="146" width="140" height="24" rx="12"/><text class="d-chip-t" x="250" y="162" text-anchor="middle">nosniff header set</text>
+        <text class="d-s" x="80" y="196">Published to 127.0.0.1:5000</text>
+        <text class="d-s" x="80" y="212">for the readiness check</text>
+
+        <rect class="d-box" x="426" y="84" width="270" height="138" rx="14"/>
+        <text class="d-t" x="442" y="110">ZAP Baseline</text>
+        <text class="d-s" x="442" y="130">ghcr.io/zaproxy/zaproxy:stable</text>
+        <rect class="d-warn" x="442" y="146" width="188" height="24" rx="12"/><text class="d-warn-t" x="536" y="162" text-anchor="middle">baseline.conf: 10021 = FAIL</text>
+        <text class="d-s" x="442" y="196">-I: WARN findings do not</text>
+        <text class="d-s" x="442" y="212">fail the scan</text>
+
+        <line class="d-arrow" x1="424" y1="140" x2="338" y2="140" marker-end="url(#ah)"/>
+        <text class="d-lbl" x="380" y="128" text-anchor="middle">scan</text>
+        <text class="d-lbl" x="380" y="160" text-anchor="middle">passive</text>
+
+        <line class="d-arrow" x1="561" y1="224" x2="561" y2="276" marker-end="url(#ah)"/>
+        <text class="d-lbl" x="571" y="254">bind mount to /zap/wrk</text>
+        <line class="d-arrow" x1="199" y1="276" x2="199" y2="226" marker-end="url(#ah)"/>
+        <text class="d-lbl" x="209" y="258">curl readiness check</text>
+
+        <rect class="d-box" x="64" y="278" width="270" height="44" rx="12"/>
+        <text class="d-t" x="80" y="305" style="font-size:13px">Runner shell · up to 15 tries</text>
+        <rect class="d-box" x="426" y="278" width="270" height="44" rx="12"/>
+        <text class="d-t" x="442" y="305" style="font-size:13px">reports/raw · zap-ci.html, zap-ci.json</text>
+
+        <line class="d-arrow" x1="561" y1="324" x2="561" y2="350" marker-end="url(#ah)"/>
+        <rect class="d-flow" x="426" y="352" width="270" height="36" rx="10"/>
+        <text class="d-t" x="561" y="375" text-anchor="middle" style="font-size:13px">Artifact: zap-reports · kept 7 days</text>
+      </svg>
+      <p class="note"><b>Target:</b> <code>http://devsecops-web:5000/welcome</code>. The upload step runs even after earlier failures, and fails if no report file exists.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="timeline">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">3 · Build timeline</div>
+      <h2>How the lab grew, 11 – 26 September 2026</h2>
+      <p>Each milestone is a branch and a pull request. Nothing reached <code>main</code> without passing the checks that existed at that point.</p>
+    </div>
+    <div class="tl">
+      <div class="tl-item"><div class="tl-when">11 – 12 Sep</div><div class="card tl-card"><h3>Git and GitHub basics</h3><p>Repository set up, branches, commits and a first pull request with learning notes.</p><div class="prs"><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/1">PR #1</a></div></div></div>
+      <div class="tl-item"><div class="tl-when">12 Sep</div><div class="card tl-card"><h3>First web app and CI</h3><p>A Flask app with route tests, and GitHub Actions running pytest on every pull request.</p><div class="prs"><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/2">PR #2</a></div></div></div>
+      <div class="tl-item"><div class="tl-when">14 – 16 Sep</div><div class="card tl-card"><h3>SAST with Bandit</h3><p>Bandit added to CI. The gate was tested with a dummy hardcoded password.</p><div class="prs"><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/3">PR #3</a></div></div></div>
+      <div class="tl-item"><div class="tl-when">18 – 26 Sep</div><div class="card tl-card"><h3>Docker and DAST</h3><p>Dockerfile, container start in CI, an HTTP readiness check, ZAP Baseline with HTML and JSON reports, and the <code>nosniff</code> fix.</p><div class="prs"><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/4">PR #4</a></div></div></div>
+      <div class="tl-item"><div class="tl-when">26 Sep</div><div class="card tl-card"><h3>DAST gate verification</h3><p>A known CSP finding was temporarily set to FAIL to prove that ZAP can block a merge, then reverted.</p><div class="prs"><a class="pr exp" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/5">PR #5 · experiment, not merged</a><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/6">PR #6 · notes</a></div></div></div>
+      <div class="tl-item"><div class="tl-when">26 Sep</div><div class="card tl-card"><h3>Documentation</h3><p>README with local run steps and an interactive lab overview.</p><div class="prs"><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/7">PR #7</a><a class="pr" href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/8">PR #8</a></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt" id="experiments">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">4 · Experiments</div>
+      <h2>Three experiments, three lessons</h2>
+      <p>Change one thing, observe the result, and write down what it does and does not prove.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" class="on" data-pane="eA">A · SAST gate</button>
+      <button type="button" role="tab" data-pane="eB">B · A real DAST finding</button>
+      <button type="button" role="tab" data-pane="eC">C · DAST gate</button>
+    </div>
+
+    <div class="exp-pane card pad on" id="eA">
+      <h3 style="font-size:20px">Does Bandit block a hardcoded password?</h3>
+      <div class="steps">
+        <div class="st"><h4>1 · Baseline</h4><p><span class="mono">d380ee6</span> adds Bandit to CI. The scan passes.</p></div>
+        <div class="st bad"><h4>2 · Introduce</h4><p><span class="mono">29adbcc</span> adds a dummy hardcoded password. Bandit reports <b>B105</b>; the required check blocks merging.</p></div>
+        <div class="st warn"><h4>3 · Cosmetic fix</h4><p><span class="mono">3b4148a</span> renames <code>password</code> to <code>value</code>. The scan passes, but the hardcoded string is still there.</p></div>
+        <div class="st good"><h4>4 · Real fix</h4><p><span class="mono">7a2e4e9</span> removes the unused dummy value. No issues; both tests pass.</p></div>
+      </div>
+      <div class="takeaway"><b>Lesson:</b> a passing SAST check does not prove the code is secure. A reviewer still has to check that the underlying problem was fixed. Only synthetic data was used. <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab/blob/main/docs/sast-lab.md">Notes</a>.</div>
+    </div>
+
+    <div class="exp-pane card pad" id="eB">
+      <h3 style="font-size:20px">ZAP finds a missing header, and the fix is verified three ways</h3>
+      <div class="steps">
+        <div class="st bad"><h4>Finding</h4><p>ZAP rule <b>10021</b>: X-Content-Type-Options header missing on <code>/</code> and <code>/welcome</code>.</p></div>
+        <div class="st"><h4>Fix</h4><p>One <code>after_request</code> hook sets <code>nosniff</code> on every response.</p></div>
+        <div class="st"><h4>Pin it</h4><p>A new pytest test asserts the header so it cannot regress silently.</p></div>
+        <div class="st good"><h4>Verify</h4><p>All tests pass, <code>curl</code> shows the header, and the follow-up ZAP report no longer lists 10021.</p></div>
+      </div>
+      <pre><code>@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+def test_welcome_has_nosniff_header():
+    client = app.test_client()
+    response = client.get("/welcome")
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"</code></pre>
+      <div class="takeaway"><b>Lesson:</b> fixing one finding does not make the app secure; other alerts remain (see Findings). Rule 10021 stays configured as FAIL in <code>.zap/baseline.conf</code>.</div>
+    </div>
+
+    <div class="exp-pane card pad" id="eC">
+      <h3 style="font-size:20px">Can a ZAP finding block a merge?</h3>
+      <p style="margin:6px 0 0;color:var(--muted)">The existing CSP finding (rule <b>10038</b>) was temporarily set to FAIL in <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab/pull/5">pull request #5</a>.</p>
+      <div class="steps">
+        <div class="st bad"><h4>ZAP</h4><p>Reported 10038 as FAIL and exited with <b>code 1</b>.</p></div>
+        <div class="st bad"><h4>Required check</h4><p>The check failed and GitHub blocked the merge.</p></div>
+        <div class="st"><h4>Reports</h4><p>HTML and JSON were still uploaded despite the failed scan.</p></div>
+        <div class="st good"><h4>Revert</h4><p>Removing the temporary policy made CI pass again.</p></div>
+      </div>
+      <div class="outcome">
+        <div class="box ok"><b>What it proves</b>A ZAP finding configured as FAIL can block a merge.</div>
+        <div class="box no"><b>What it does not prove</b>It did not fix the missing CSP header, and it did not test a regression of rule 10021.</div>
+      </div>
+      <p class="note"><b>Config:</b> <code>.zap/baseline.conf</code> holds one tab-separated line, <code>10021 FAIL (X-Content-Type-Options Header Missing)</code>. The <code>-I</code> option only affects WARN findings. <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab/blob/main/docs/dast-lab.md">Notes</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="findings">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">5 · What ZAP still reports</div>
+      <h2>Open findings, stated honestly</h2>
+      <p>From the ZAP 2.17.0 report of a CI run on 25 September 2026 (target <code>http://devsecops-web:5000</code>). Rule 10021 is absent, which matches the <code>nosniff</code> fix.</p>
+    </div>
+    <div class="card tbl-wrap">
+      <table class="val">
+        <thead><tr><th>Alert</th><th>Rule</th><th>Risk (confidence)</th><th>Instances</th><th>Gate</th></tr></thead>
+        <tbody>
+          <tr><td>Content Security Policy (CSP) Header Not Set</td><td class="mono">10038</td><td><span class="risk med">Medium (High)</span></td><td>4</td><td>WARN</td></tr>
+          <tr><td>Missing Anti-clickjacking Header</td><td class="mono">10020</td><td><span class="risk med">Medium (Medium)</span></td><td>2</td><td>WARN</td></tr>
+          <tr><td>Cross-Origin-Embedder-Policy Header Missing or Invalid</td><td class="mono">90004</td><td><span class="risk low">Low (Medium)</span></td><td>2</td><td>WARN</td></tr>
+          <tr><td>Cross-Origin-Opener-Policy Header Missing or Invalid</td><td class="mono">90004</td><td><span class="risk low">Low (Medium)</span></td><td>2</td><td>WARN</td></tr>
+          <tr><td>Cross-Origin-Resource-Policy Header Missing or Invalid</td><td class="mono">90004</td><td><span class="risk low">Low (Medium)</span></td><td>2</td><td>WARN</td></tr>
+          <tr><td>Permissions Policy Header Not Set</td><td class="mono">10063</td><td><span class="risk low">Low (Medium)</span></td><td>4</td><td>WARN</td></tr>
+          <tr><td>Server Leaks Version Information via "Server" HTTP Response Header Field</td><td class="mono">10036</td><td><span class="risk low">Low (High)</span></td><td>4</td><td>WARN</td></tr>
+          <tr><td>Storable and Cacheable Content</td><td class="mono">10049</td><td><span class="risk info">Informational (Medium)</span></td><td>4</td><td>WARN</td></tr>
+          <tr><td>X-Content-Type-Options Header Missing <em>(fixed)</em></td><td class="mono">10021</td><td>n/a</td><td>0</td><td><span class="gated">FAIL</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Evidence note:</b> only rule 10021 is gated. The other alerts are warnings that do not fail the scan and are still unresolved. The CI artifact expires after 7 days, so this report was downloaded and kept locally.</p>
+  </div>
+</section>
+
+<section class="s alt" id="run">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="k">6 · Run it yourself</div>
+      <h2>Reproduce the checks locally</h2>
+      <p>Windows PowerShell, from the repository root. Needs Git, Python 3.13 and Docker Desktop with Linux containers.</p>
+    </div>
+    <details class="run" open>
+      <summary>Tests and SAST</summary>
+<pre><code>py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m bandit app.py</code></pre>
+    </details>
+    <details class="run">
+      <summary>Build and start the app</summary>
+<pre><code>docker build -t devsecops-lab:local .
+docker network create devsecops-net
+docker run --rm --name devsecops-web --network devsecops-net -p 127.0.0.1:5000:5000 devsecops-lab:local
+
+# second terminal
+curl.exe -i http://127.0.0.1:5000/welcome</code></pre>
+      <p style="font-size:14px;color:var(--muted)">Expected: HTTP 200, the welcome message and <code>X-Content-Type-Options: nosniff</code>.</p>
+    </details>
+    <details class="run">
+      <summary>ZAP Baseline</summary>
+<pre><code>New-Item -ItemType Directory -Force reports/raw
+Copy-Item .zap/baseline.conf reports/raw/baseline.conf
+$zapReportPath = (Resolve-Path reports/raw).Path
+
+docker run --rm --network devsecops-net --mount "type=bind,source=$zapReportPath,target=/zap/wrk" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://devsecops-web:5000/welcome -c baseline.conf -I -r zap-local.html -J zap-local.json
+
+$LASTEXITCODE</code></pre>
+      <p style="font-size:14px;color:var(--muted)">Reports land in <code>reports/raw/</code>. With <code>-I</code>, WARN findings do not fail the scan; FAIL findings still do. A clean exit does not mean the app has no findings.</p>
+    </details>
+
+    <div class="s-head" style="margin-top:36px">
+      <div class="k">Limitations</div>
+      <h2 style="font-size:22px">What this lab does not claim</h2>
+    </div>
+    <ul class="limits">
+      <li>The app uses Flask's development server. It is a lab, not a production deployment.</li>
+      <li>ZAP Baseline crawls and scans passively. It is not a full active assessment.</li>
+      <li>CSP and other reported warnings are still unresolved.</li>
+      <li>Passing tests and scans do not prove the application is secure.</li>
+      <li>Docker images use mutable tags, so later runs may use different versions.</li>
+      <li>Security testing is limited to this lab. Only synthetic data and dummy credentials are used.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">A learning project on how security checks fit into CI/CD. See the <a href="https://github.com/zSunnn/devsecops-security-pipeline-lab">repository</a> for the code, workflow and notes.</div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement;
+
+  /* theme */
+  var tb=document.getElementById('theme');
+  function applyTheme(t){ if(t){root.setAttribute('data-theme',t);} else {root.removeAttribute('data-theme');} }
+  try{ var saved=localStorage.getItem('theme'); if(saved){applyTheme(saved);} }catch(e){}
+  tb.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+    var next=cur==='dark'?'light':'dark';
+    applyTheme(next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+
+  /* pipeline stages */
+  var S=[
+    {t:'Trigger',s:'pull request or push to main',tag:['build','Setup'],
+     what:'The workflow runs on every pull request to <code>main</code> and on every push to <code>main</code>. The job token is limited to <code>contents: read</code>.',
+     why:'Checks run before code is merged, and again after, so the protected branch is always verified.',
+     code:'on:\n  pull_request:\n    branches: [main]\n  push:\n    branches: [main]\npermissions:\n  contents: read',
+     fail:'Not a failure point.'},
+    {t:'Checkout and Python',s:'Python 3.13',tag:['build','Setup'],
+     what:'Checks out the code with <code>persist-credentials: false</code>, then installs Python 3.13.',
+     why:'The runner starts empty. Not persisting credentials keeps the token out of later steps.',
+     code:'- uses: actions/checkout@v7\n  with:\n    persist-credentials: false\n- uses: actions/setup-python@v7\n  with:\n    python-version: "3.13"',
+     fail:'The checkout or the Python setup cannot complete.'},
+    {t:'Install dependencies',s:'pinned requirements.txt',tag:['build','Setup'],
+     what:'Installs Flask, pytest, Bandit and their dependencies at pinned versions.',
+     why:'Pinned versions make runs repeatable between the laptop and CI.',
+     code:'python -m pip install -r requirements.txt',
+     fail:'A dependency cannot be installed.'},
+    {t:'pytest',s:'three route and header tests',tag:['test','Test'],
+     what:'Runs the Flask test client against <code>/welcome</code>, an old <code>/hello</code> route that must return 404, and the <code>nosniff</code> response header.',
+     why:'Functional tests prove the app still behaves correctly, and they pin the security header.',
+     code:'python -m pytest -q',
+     fail:'Any test fails.'},
+    {t:'Bandit SAST',s:'static analysis of app.py',tag:['sec','Security'],
+     what:'Scans the Python source for risky patterns without running it.',
+     why:'It catches problems such as a hardcoded password (B105) before the code is merged.',
+     code:'python -m bandit app.py',
+     fail:'Bandit reports an issue. Experiment A showed B105 blocking a merge.'},
+    {t:'Docker build',s:'python:3.13-slim',tag:['build','Build'],
+     what:'Builds the image <code>devsecops-lab:ci</code>. The Dockerfile copies <code>requirements.txt</code> and <code>app.py</code> and starts Flask on port 5000.',
+     why:'DAST must test the app the way it will run, in a container, not just the source.',
+     code:'docker build -t devsecops-lab:ci .',
+     fail:'The image does not build.'},
+    {t:'Start Flask and wait',s:'readiness check',tag:['build','Build'],
+     what:'Creates the <code>devsecops-net</code> network, starts the <code>devsecops-web</code> container, then calls <code>/welcome</code> up to 15 times, 2 seconds apart.',
+     why:'Starting a container does not mean the app is ready. Scanning too early would give a false result.',
+     code:'for attempt in {1..15}; do\n  if curl --fail --silent --show-error \\\n     --connect-timeout 2 --max-time 3 \\\n     http://127.0.0.1:5000/welcome; then exit 0; fi\n  sleep 2\ndone\ndocker logs devsecops-web\nexit 1',
+     fail:'No HTTP response after 15 attempts. The container logs are printed and the step fails.'},
+    {t:'ZAP Baseline',s:'DAST with baseline.conf',tag:['sec','Security'],
+     what:'Runs OWASP ZAP in a second container on the same network and scans <code>http://devsecops-web:5000/welcome</code>. It crawls and checks responses passively, then writes HTML and JSON reports.',
+     why:'Finds problems that only appear in a running app, such as missing response headers.',
+     code:'zap-baseline.py \\\n  -t http://devsecops-web:5000/welcome \\\n  -c baseline.conf -I \\\n  -r zap-ci.html -J zap-ci.json',
+     fail:'A finding configured as FAIL in <code>baseline.conf</code> (rule 10021). With <code>-I</code>, WARN findings do not fail. Experiment C used 10038.'},
+    {t:'Upload reports',s:'always, kept 7 days',tag:['build','Evidence'],
+     what:'Uploads <code>zap-ci.html</code> and <code>zap-ci.json</code> as the <code>zap-reports</code> artifact, even when earlier steps failed.',
+     why:'A failed scan is exactly when the report is needed.',
+     code:'if: always()\nuses: actions/upload-artifact@v7\nwith:\n  name: zap-reports\n  if-no-files-found: error\n  retention-days: 7',
+     fail:'No report file exists. It cannot upload a report that was never generated.'},
+    {t:'Merge gate',s:'required status check',tag:['gate','Gate'],
+     what:'GitHub treats the workflow as a required check on <code>main</code>. A red check blocks the merge button.',
+     why:'This is what turns scanners into a gate: a finding must be fixed, or consciously changed, before code is merged.',
+     code:'',
+     fail:'Any earlier step failed. Experiments A and C both ended in a blocked merge.'}
+  ];
+  var list=document.getElementById('stages'), det=document.getElementById('detail');
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function show(i){
+    var d=S[i];
+    Array.prototype.forEach.call(list.children,function(b,j){ b.classList.toggle('on',j===i); b.setAttribute('aria-pressed',j===i?'true':'false'); });
+    det.innerHTML='<span class="tag '+d.tag[0]+'">'+d.tag[1]+'</span><h3>'+(i+1)+' · '+d.t+'</h3>'+
+      '<dl><dt>What it does</dt><dd>'+d.what+'</dd><dt>Why it is there</dt><dd>'+d.why+'</dd>'+
+      (d.code?'<dt>Configuration</dt><dd><pre><code>'+esc(d.code)+'</code></pre></dd>':'')+
+      '</dl><div class="outcome"><div class="box no"><b>Fails when</b>'+d.fail+'</div>'+
+      '<div class="box ok"><b>Passes when</b>'+(i===S.length-1?'Every earlier step is green.':'It completes and the next stage can run.')+'</div></div>';
+  }
+  S.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.type='button'; b.className='stage'+(d.tag[0]==='sec'||d.tag[0]==='gate'?' sec':''); b.setAttribute('role','listitem');
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+d.t+'<small>'+d.s+'</small></span>';
+    b.addEventListener('click',function(){show(i);});
+    list.appendChild(b);
+  });
+  show(0);
+
+  /* experiment tabs */
+  var tabs=document.querySelectorAll('.tabs button');
+  Array.prototype.forEach.call(tabs,function(b){
+    b.addEventListener('click',function(){
+      Array.prototype.forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});
+      Array.prototype.forEach.call(document.querySelectorAll('.exp-pane'),function(c){c.classList.toggle('on',c.id===b.getAttribute('data-pane'));});
+    });
+  });
+
+  /* nav highlight */
+  var links=Array.prototype.slice.call(document.querySelectorAll('.nav a.link'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+en.target.id);}); }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){ if(s){io.observe(s);} });
+  }
+})();
+</script>
+</body>
+</html>
