@@ -3,6 +3,12 @@
 A learning project covering Git, a small web application, automated tests,
 SAST, DAST and GitHub Actions.
 
+**Visual walkthrough:** read the [illustrated walkthrough](WALKTHROUGH.md)
+for the pipeline, architecture, timeline and experiments on one page. An
+interactive version is on
+[GitHub Pages](https://zsunnn.github.io/devsecops-security-pipeline-lab/)
+(source: [`index.html`](index.html)).
+
 ## Implemented features
 
 - Flask application with automated pytest tests.
